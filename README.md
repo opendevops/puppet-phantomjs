@@ -1,5 +1,10 @@
 # phantomjs
 
+example:
+```
+::phantomjs{ 'phantomjs': package_version => '2.1.1', force_update => false }
+```
+
 #### Table of Contents
 
 1. [Overview](#overview)

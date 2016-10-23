@@ -23,19 +23,56 @@
 #
 # === Examples
 #
-#  class { 'phantomjs':
-#    servers => [ 'pool.ntp.org', 'ntp.local.company.com' ],
-#  }
+# ::phantomjs{ 'phantomjs': version => '2.1.1', force_update => false }
 #
 # === Authors
 #
-# Author Name <author@domain.com>
+# Matthew Hansen
 #
 # === Copyright
 #
-# Copyright 2016 Your name here, unless otherwise noted.
+# Copyright 2016 Matthew Hansen
 #
-class phantomjs {
+define phantomjs (
+  $package_version = '1.9.7',
+  $source_url = undef,
+  $source_dir = '/opt',
+  $install_dir = '/usr/local/bin',
+  $force_update = false,
+  $timeout = 300
+) {
 
+  $packages = [
+    Package['curl'],
+    Package['bzip2'],
+    Package['libfontconfig1']
+  ]
 
+  $pkg_src_url = $source_url ? {
+    undef   => "https://bitbucket.org/ariya/phantomjs/downloads/phantomjs-${package_version}-linux-${::hardwaremodel}.tar.bz2",
+    default => $source_url,
+  }
+
+  exec { 'get phantomjs':
+    command => "/usr/bin/curl --silent --show-error --fail --location ${pkg_src_url} --output ${source_dir}/phantomjs.tar.bz2 \
+      && mkdir ${source_dir}/phantomjs \
+      && tar --extract --file=${source_dir}/phantomjs.tar.bz2 --strip-components=1 --directory=${source_dir}/phantomjs",
+    creates => "${source_dir}/phantomjs/",
+    require => $packages,
+    timeout => $timeout
+  }
+
+  file { "${install_dir}/phantomjs":
+    ensure => link,
+    target => "${source_dir}/phantomjs/bin/phantomjs",
+    force  => true,
+  }
+
+  if $force_update {
+    exec { 'remove phantomjs':
+      command => "/bin/rm -rf ${source_dir}/phantomjs",
+      notify  => Exec[ 'get phantomjs' ]
+    }
+  }
 }
+
